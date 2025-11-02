@@ -6,6 +6,7 @@ export interface Lesson {
   title: string;
   description: string;
   videoUrl: string;
+  videoStoragePath?: string;
   duration: string;
   orderIndex: number;
   createdAt: string;
@@ -21,6 +22,7 @@ export const createLesson = async (lesson: Omit<Lesson, 'id' | 'createdAt'>): Pr
       title: lesson.title,
       description: lesson.description,
       video_url: lesson.videoUrl,
+      video_storage_path: lesson.videoStoragePath,
       duration: lesson.duration,
       order_index: lesson.orderIndex,
     })
@@ -35,6 +37,7 @@ export const createLesson = async (lesson: Omit<Lesson, 'id' | 'createdAt'>): Pr
     title: data.title,
     description: data.description,
     videoUrl: data.video_url,
+    videoStoragePath: data.video_storage_path,
     duration: data.duration,
     orderIndex: data.order_index,
     createdAt: data.created_at,
@@ -58,6 +61,7 @@ export const getCourseLessons = async (courseId: string): Promise<Lesson[]> => {
     title: l.title,
     description: l.description,
     videoUrl: l.video_url,
+    videoStoragePath: l.video_storage_path,
     duration: l.duration,
     orderIndex: l.order_index,
     createdAt: l.created_at,
@@ -81,6 +85,7 @@ export const getLessonById = async (id: string): Promise<Lesson | undefined> => 
     title: data.title,
     description: data.description,
     videoUrl: data.video_url,
+    videoStoragePath: data.video_storage_path,
     duration: data.duration,
     orderIndex: data.order_index,
     createdAt: data.created_at,
@@ -96,6 +101,7 @@ export const updateLesson = async (lessonId: string, updates: Partial<Lesson>): 
       title: updates.title,
       description: updates.description,
       video_url: updates.videoUrl,
+      video_storage_path: updates.videoStoragePath,
       duration: updates.duration,
       order_index: updates.orderIndex,
     })

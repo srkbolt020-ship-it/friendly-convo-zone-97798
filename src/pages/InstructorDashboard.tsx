@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Edit, Trash2, Users } from 'lucide-react';
@@ -13,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { notifyEnrolledStudents } from '@/lib/notificationManager';
 import { createCourse, getInstructorCourses, updateCourse, deleteCourse, getCourseEnrollmentCount, Course } from '@/lib/courseManager';
 import { createLesson, getCourseLessons, updateLesson, deleteLesson, reorderLessons } from '@/lib/lessonManager';
+import { VideoUpload } from '@/components/VideoUpload';
 
 export default function InstructorDashboard() {
   const { user } = useAuth();
@@ -31,7 +33,7 @@ export default function InstructorDashboard() {
     category: '',
     duration: '',
     difficulty: 'beginner' as const,
-    lessons: [{ title: '', description: '', videoUrl: '', duration: '' }],
+    lessons: [{ title: '', description: '', videoUrl: '', videoStoragePath: '', duration: '', videoSource: 'url' as 'url' | 'upload' }],
   });
 
   const [editCourse, setEditCourse] = useState<{
@@ -41,7 +43,7 @@ export default function InstructorDashboard() {
     category: string;
     duration: string;
     difficulty: 'beginner' | 'intermediate' | 'advanced';
-    lessons: { id?: string; title: string; description: string; videoUrl: string; duration: string }[];
+    lessons: { id?: string; title: string; description: string; videoUrl: string; videoStoragePath?: string; duration: string; videoSource?: 'url' | 'upload' }[];
   }>({
     title: '',
     description: '',
@@ -49,7 +51,7 @@ export default function InstructorDashboard() {
     category: '',
     duration: '',
     difficulty: 'beginner',
-    lessons: [{ title: '', description: '', videoUrl: '', duration: '' }],
+    lessons: [{ title: '', description: '', videoUrl: '', videoStoragePath: '', duration: '', videoSource: 'url' }],
   });
 
   useEffect(() => {
@@ -101,13 +103,14 @@ export default function InstructorDashboard() {
 
     if (createdCourse) {
       // Create lessons
-      const validLessons = newCourse.lessons.filter(l => l.title.trim() && l.videoUrl.trim());
+      const validLessons = newCourse.lessons.filter(l => l.title.trim() && (l.videoUrl.trim() || l.videoStoragePath?.trim()));
       for (let i = 0; i < validLessons.length; i++) {
         await createLesson({
           courseId: createdCourse.id,
           title: validLessons[i].title,
           description: validLessons[i].description,
           videoUrl: validLessons[i].videoUrl,
+          videoStoragePath: validLessons[i].videoStoragePath,
           duration: validLessons[i].duration,
           orderIndex: i + 1,
         });
@@ -122,7 +125,7 @@ export default function InstructorDashboard() {
         category: '',
         duration: '',
         difficulty: 'beginner',
-        lessons: [{ title: '', description: '', videoUrl: '', duration: '' }],
+        lessons: [{ title: '', description: '', videoUrl: '', videoStoragePath: '', duration: '', videoSource: 'url' }],
       });
       toast({ title: 'Course created successfully!' });
     } else {
@@ -132,7 +135,7 @@ export default function InstructorDashboard() {
   };
 
   const addLesson = (isEdit: boolean = false) => {
-    const newLesson = { title: '', description: '', videoUrl: '', duration: '' };
+    const newLesson = { title: '', description: '', videoUrl: '', videoStoragePath: '', duration: '', videoSource: 'url' as 'url' | 'upload' };
     if (isEdit) {
       setEditCourse({ ...editCourse, lessons: [...editCourse.lessons, newLesson] });
     } else {
@@ -185,9 +188,11 @@ export default function InstructorDashboard() {
             title: l.title, 
             description: l.description || '', 
             videoUrl: l.videoUrl || '', 
-            duration: l.duration || ''
+            videoStoragePath: l.videoStoragePath || '',
+            duration: l.duration || '',
+            videoSource: l.videoStoragePath ? ('upload' as const) : ('url' as const)
           }))
-        : [{ title: '', description: '', videoUrl: '', duration: '' }],
+        : [{ title: '', description: '', videoUrl: '', videoStoragePath: '', duration: '', videoSource: 'url' as const }],
     });
     setShowEditDialog(true);
   };
@@ -208,7 +213,7 @@ export default function InstructorDashboard() {
     if (success) {
       // Get existing lessons
       const existingLessons = await getCourseLessons(editingCourse.id);
-      const validLessons = editCourse.lessons.filter(l => l.title.trim() && l.videoUrl.trim());
+      const validLessons = editCourse.lessons.filter(l => l.title.trim() && (l.videoUrl.trim() || l.videoStoragePath?.trim()));
 
       // Update or create lessons
       for (let i = 0; i < validLessons.length; i++) {
@@ -219,6 +224,7 @@ export default function InstructorDashboard() {
             title: lesson.title,
             description: lesson.description,
             videoUrl: lesson.videoUrl,
+            videoStoragePath: lesson.videoStoragePath,
             duration: lesson.duration,
             orderIndex: i + 1,
           });
@@ -229,6 +235,7 @@ export default function InstructorDashboard() {
             title: lesson.title,
             description: lesson.description,
             videoUrl: lesson.videoUrl,
+            videoStoragePath: lesson.videoStoragePath,
             duration: lesson.duration,
             orderIndex: i + 1,
           });
@@ -392,11 +399,42 @@ export default function InstructorDashboard() {
                       value={lesson.title}
                       onChange={(e) => updateLessonField(index, 'title', e.target.value, false)}
                     />
-                    <Input
-                      placeholder="Video URL (Vimeo/YouTube)"
-                      value={lesson.videoUrl}
-                      onChange={(e) => updateLessonField(index, 'videoUrl', e.target.value, false)}
-                    />
+                    <div className="space-y-2">
+                      <Label>Video Source</Label>
+                      <RadioGroup
+                        value={lesson.videoSource || 'url'}
+                        onValueChange={(value: 'url' | 'upload') => {
+                          updateLessonField(index, 'videoSource', value, false);
+                          if (value === 'url') {
+                            updateLessonField(index, 'videoStoragePath', '', false);
+                          } else {
+                            updateLessonField(index, 'videoUrl', '', false);
+                          }
+                        }}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="upload" id={`upload-${index}`} />
+                          <Label htmlFor={`upload-${index}`}>Upload Video</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="url" id={`url-${index}`} />
+                          <Label htmlFor={`url-${index}`}>External URL (Vimeo/YouTube)</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                    {lesson.videoSource === 'url' ? (
+                      <Input
+                        placeholder="Video URL (Vimeo/YouTube)"
+                        value={lesson.videoUrl}
+                        onChange={(e) => updateLessonField(index, 'videoUrl', e.target.value, false)}
+                      />
+                    ) : (
+                      <VideoUpload
+                        lessonId={`new-lesson-${index}`}
+                        existingPath={lesson.videoStoragePath}
+                        onUploadComplete={(path) => updateLessonField(index, 'videoStoragePath', path, false)}
+                      />
+                    )}
                     <Input
                       placeholder="Duration (e.g., 15:30)"
                       value={lesson.duration}
@@ -509,11 +547,42 @@ export default function InstructorDashboard() {
                       value={lesson.title}
                       onChange={(e) => updateLessonField(index, 'title', e.target.value, true)}
                     />
-                    <Input
-                      placeholder="Video URL (Vimeo/YouTube)"
-                      value={lesson.videoUrl}
-                      onChange={(e) => updateLessonField(index, 'videoUrl', e.target.value, true)}
-                    />
+                    <div className="space-y-2">
+                      <Label>Video Source</Label>
+                      <RadioGroup
+                        value={lesson.videoSource || 'url'}
+                        onValueChange={(value: 'url' | 'upload') => {
+                          updateLessonField(index, 'videoSource', value, true);
+                          if (value === 'url') {
+                            updateLessonField(index, 'videoStoragePath', '', true);
+                          } else {
+                            updateLessonField(index, 'videoUrl', '', true);
+                          }
+                        }}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="upload" id={`edit-upload-${index}`} />
+                          <Label htmlFor={`edit-upload-${index}`}>Upload Video</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="url" id={`edit-url-${index}`} />
+                          <Label htmlFor={`edit-url-${index}`}>External URL (Vimeo/YouTube)</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                    {lesson.videoSource === 'url' ? (
+                      <Input
+                        placeholder="Video URL (Vimeo/YouTube)"
+                        value={lesson.videoUrl}
+                        onChange={(e) => updateLessonField(index, 'videoUrl', e.target.value, true)}
+                      />
+                    ) : (
+                      <VideoUpload
+                        lessonId={lesson.id || `edit-lesson-${index}`}
+                        existingPath={lesson.videoStoragePath}
+                        onUploadComplete={(path) => updateLessonField(index, 'videoStoragePath', path, true)}
+                      />
+                    )}
                     <Input
                       placeholder="Duration (e.g., 15:30)"
                       value={lesson.duration}

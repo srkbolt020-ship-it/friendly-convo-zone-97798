@@ -15,6 +15,7 @@ import { getCourseById, enrollInCourse, isEnrolledInCourse, getCourseEnrollmentC
 import { Lesson, getCourseLessons } from '@/lib/lessonManager';
 import { Course } from '@/lib/courseManager';
 import { getWorkshopComments, createComment as createWorkshopComment } from '@/lib/commentManager';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Comment {
   id: string;
@@ -22,6 +23,42 @@ interface Comment {
   userName: string;
   message: string;
   createdAt: string;
+}
+
+function VideoPlayer({ storagePath, lessonId }: { storagePath: string; lessonId: string }) {
+  const [videoUrl, setVideoUrl] = useState<string>('');
+
+  useEffect(() => {
+    async function getSignedUrl() {
+      const { data } = await supabase.storage
+        .from('lesson-videos')
+        .createSignedUrl(storagePath, 3600); // 1 hour expiration
+
+      if (data?.signedUrl) {
+        setVideoUrl(data.signedUrl);
+      }
+    }
+    getSignedUrl();
+  }, [storagePath]);
+
+  if (!videoUrl) {
+    return (
+      <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
+        <p className="text-muted-foreground">Loading video...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="aspect-video bg-black rounded-lg overflow-hidden">
+      <video
+        src={videoUrl}
+        controls
+        className="w-full h-full"
+        controlsList="nodownload"
+      />
+    </div>
+  );
 }
 
 export default function CourseDetail() {
@@ -224,15 +261,28 @@ export default function CourseDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           {/* Video Player */}
-          {lessons.length > 0 && (
-            <div className="aspect-video bg-black rounded-lg overflow-hidden relative">
-              <iframe
-                src={`${lessons[currentLesson]?.videoUrl.replace('vimeo.com/', 'player.vimeo.com/video/')}`}
-                className="w-full h-full"
-                allow="autoplay; fullscreen; picture-in-picture"
-                allowFullScreen
+          {lessons.length > 0 && currentLesson < lessons.length && (
+            lessons[currentLesson].videoStoragePath ? (
+              // Supabase Storage video
+              <VideoPlayer 
+                storagePath={lessons[currentLesson].videoStoragePath} 
+                lessonId={lessons[currentLesson].id}
               />
-            </div>
+            ) : lessons[currentLesson].videoUrl ? (
+              // External URL (existing iframe logic)
+              <div className="aspect-video bg-black rounded-lg overflow-hidden relative">
+                <iframe
+                  src={`${lessons[currentLesson].videoUrl.replace('vimeo.com/', 'player.vimeo.com/video/')}`}
+                  className="w-full h-full"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            ) : (
+              <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
+                <p className="text-muted-foreground">No video available</p>
+              </div>
+            )
           )}
 
           {/* Course Info */}
