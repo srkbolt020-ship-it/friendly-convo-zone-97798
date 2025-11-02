@@ -412,13 +412,13 @@ export default function InstructorDashboard() {
                           }
                         }}
                       >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="upload" id={`upload-${index}`} />
-                          <Label htmlFor={`upload-${index}`}>Upload Video</Label>
+                        <div className="flex items-center space-x-2 cursor-pointer">
+                          <RadioGroupItem value="upload" id={`upload-new-${index}`} />
+                          <Label htmlFor={`upload-new-${index}`} className="cursor-pointer">Upload Video</Label>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="url" id={`url-${index}`} />
-                          <Label htmlFor={`url-${index}`}>External URL (Vimeo/YouTube)</Label>
+                        <div className="flex items-center space-x-2 cursor-pointer">
+                          <RadioGroupItem value="url" id={`url-new-${index}`} />
+                          <Label htmlFor={`url-new-${index}`} className="cursor-pointer">External URL (Vimeo/YouTube)</Label>
                         </div>
                       </RadioGroup>
                     </div>
@@ -560,13 +560,13 @@ export default function InstructorDashboard() {
                           }
                         }}
                       >
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 cursor-pointer">
                           <RadioGroupItem value="upload" id={`edit-upload-${index}`} />
-                          <Label htmlFor={`edit-upload-${index}`}>Upload Video</Label>
+                          <Label htmlFor={`edit-upload-${index}`} className="cursor-pointer">Upload Video</Label>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 cursor-pointer">
                           <RadioGroupItem value="url" id={`edit-url-${index}`} />
-                          <Label htmlFor={`edit-url-${index}`}>External URL (Vimeo/YouTube)</Label>
+                          <Label htmlFor={`edit-url-${index}`} className="cursor-pointer">External URL (Vimeo/YouTube)</Label>
                         </div>
                       </RadioGroup>
                     </div>
