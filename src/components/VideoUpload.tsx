@@ -116,6 +116,12 @@ export function VideoUpload({ lessonId, onUploadComplete, existingPath }: VideoU
     <div className="space-y-2">
       {!uploadedPath ? (
         <>
+          <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md mb-2">
+            <Upload className="h-4 w-4 text-muted-foreground" />
+            <p className="text-xs text-muted-foreground">
+              Select a video file from your computer to upload
+            </p>
+          </div>
           <Input
             type="file"
             accept="video/mp4,video/quicktime,video/webm,video/x-msvideo"
